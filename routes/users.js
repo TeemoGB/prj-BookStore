@@ -1,11 +1,9 @@
-const { StatusCodes } = require('http-status-codes');
 const express = require('express');
 const router = express.Router();
 router.use(express.json());
 
 const { join, login, requestPasswordReset, passwordReset } = require('../controller/UserController');
 
-const conn = require("../mariadb");
 const { body, param, validationResult } = require('express-validator');
 
 const validate = (req, res, next) => {
