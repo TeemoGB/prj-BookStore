@@ -2,14 +2,22 @@ const conn = require("../mariadb");
 const { StatusCodes } = require('http-status-codes');
 
 const allBooks = (req, res) => {
-    let { category_id } = req.query;
-    let sql = `SELECT * FROM books`;
+    let { category_id, news } = req.query;
+    let sql = `SELECT * FROM books `;
+    let values = [];
 
-    if (category_id) {
-        sql = `SELECT * FROM books WHERE category_id = ?`;
+    if (category_id && news) {
+        sql += `WHERE category_id = ? AND pub_date BETWEEN DATE_SUB(NOW(), INTERVAL 1 MONTH) AND NOW()`;
+        values = [category_id, news];
+    } else if (category_id) {
+        sql += `WHERE category_id = ?`;
+        values = [category_id];
+    } else if (news) {
+        sql += `WHERE pub_date BETWEEN DATE_SUB(NOW(), INTERVAL 1 MOUNTH) AND NOW()`;
+        values = [news];
     }
 
-    conn.query(sql, category_id, (err, results) => {
+    conn.query(sql, values, (err, results) => {
         if (err) {
             console.log(err);
             return res.status(StatusCodes.BAD_REQUEST).end();
@@ -22,7 +30,9 @@ const allBooks = (req, res) => {
 const bookDetail = (req, res) => {
     let { bookId } = req.params;
 
-    const sql = `SELECT * FROM books WHERE id = ?`;
+    const sql = `SELECT * FROM books LEFT JOIN categories
+    ON books.category_id = categories.id WHERE books.id = ?;
+    `
     conn.query(sql, bookId, (err, results) => {
         if (err) {
             console.log(err);
