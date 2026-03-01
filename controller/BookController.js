@@ -3,7 +3,7 @@ const { StatusCodes } = require('http-status-codes');
 
 const allBooks = (req, res) => {
     let { category_id, news, limit, page } = req.query;
-    let sql = `SELECT * FROM books `;
+    let sql = `SELECT *, (SELECT count(*) FROM likes WHERE books.id = likes.liked_book_id) AS likes FROM books `;
     let values = [];
 
     if (category_id && news) {
@@ -33,12 +33,19 @@ const allBooks = (req, res) => {
 };
 
 const bookDetail = (req, res) => {
+    let { user_id } = req.body;
     let { bookId } = req.params;
 
-    const sql = `SELECT * FROM books LEFT JOIN categories
-    ON books.category_id = categories.id WHERE books.id = ?;
+    const sql = `SELECT *,
+    (SELECT count(*) FROM likes WHERE liked_book_id = books.id) AS likes,
+    (SELECT EXISTS(SELECT * FROM likes WHERE likes.user_id = ? AND liked_book_id = books.id)) AS liked
+    FROM books
+    LEFT JOIN categories
+    ON books.category_id = categories.category_id
+    WHERE books.id = ?;
     `
-    conn.query(sql, bookId, (err, results) => {
+    let values = [user_id, bookId];
+    conn.query(sql, values, (err, results) => {
         if (err) {
             console.log(err);
             return res.status(StatusCodes.BAD_REQUEST).end();
